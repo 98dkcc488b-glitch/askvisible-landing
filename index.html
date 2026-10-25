@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en" data-accent="blue">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AskVisible — See how Gemini describes your brand</title>
+<meta name="description" content="Self-hosted weekly reports showing what Google Gemini says about your brand when customers ask for recommendations. $19 one-time, runs on your own GitHub Actions.">
+<meta property="og:title" content="AskVisible — Weekly Gemini visibility reports you host yourself">
+<meta property="og:description" content="See what Gemini tells people when they ask about your category. $19 one-time, self-hosted.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:oklch(.23 .06 262.05);
+  --bg-deep:#030A18;
+  --fg:oklch(.98 .005 235.4);
+  --muted:oklch(.7 .03 248.2);
+  --border:oklch(.33 .06 258.8);
+  --success:oklch(.765 .177 163.223);
+  --ease:cubic-bezier(.4,0,.2,1);
+  --a1:oklch(.623 .214 259.815); --a2:oklch(.627 .265 303.9);
+  --primary:oklch(.63 .23 261.9);
+  --a-soft:oklab(.585 .029 -.231 / .10); --a-line:oklab(.585 .029 -.231 / .22);
+  --glow:rgb(2 161 255 / .45); --glow2:rgb(75 206 247 / .75);
+  --label:oklch(.673 .182 276.935);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.container{max-width:1152px;margin:0 auto;padding:0 24px}
+.narrow{max-width:820px;margin:0 auto}
+section{padding:64px 0}
+.grad{background:linear-gradient(to right,var(--a1),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;color:var(--label);background:var(--a-soft);border:1px solid var(--a-line)}
+.h2{font-size:clamp(32px,5vw,48px);line-height:1.05;font-weight:700;letter-spacing:-.01em;margin:16px 0 14px}
+.lead{color:var(--muted);font-size:18px;line-height:28px;font-weight:300;max-width:620px}
+.center{text-align:center}.center .lead{margin:0 auto}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:12px 20px;font-size:15px;font-weight:500;transition:all .2s var(--ease);cursor:pointer;border:0;font-family:inherit}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 10px 15px -3px var(--glow),0 4px 6px -4px var(--glow)}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-ghost{background:rgb(255 255 255/.05);border:1px solid rgb(255 255 255/.1);color:var(--fg)}
+.btn-ghost:hover{background:rgb(255 255 255/.1)}
+.card{background:linear-gradient(to bottom right,var(--a-soft),oklab(.627 .148 -.22/.06));border:1px solid var(--a-line);border-radius:16px;padding:28px;transition:transform .25s var(--ease),border-color .25s var(--ease)}
+.card:hover{transform:translateY(-3px);border-color:var(--a1)}
+
+/* Announcement */
+.announce{background:linear-gradient(to right,oklch(.511 .262 276.966),oklch(.558 .288 302.321),oklch(.511 .262 276.966));background-size:200% 200%;animation:shine 10s ease infinite;font-size:13px;text-align:center;padding:8px 40px}
+.announce b{background:rgb(255 255 255/.18);border-radius:999px;padding:1px 8px;font-size:11px;margin-right:8px}
+.announce a{text-decoration:underline;font-weight:600;margin-left:6px}
+
+/* Nav */
+.nav-wrap{position:sticky;top:0;z-index:50;padding:14px 0;transition:padding .3s var(--ease)}
+nav{display:flex;align-items:center;justify-content:space-between;margin:0 auto;max-width:1152px;padding:10px 24px;border-radius:16px;border:1px solid transparent;transition:all .3s var(--ease)}
+.scrolled nav{max-width:920px;background:oklab(.33 -.012 -.059/.35);border-color:rgb(255 255 255/.08);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 10px 30px rgb(0 0 0/.25)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+.logo-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--a1),var(--a2));display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px}
+.links{display:flex;gap:28px;font-size:14px;color:var(--muted)}
+.links a:hover{color:var(--fg)}
+.nav-cta{display:flex;gap:10px}
+@media(max-width:820px){.links,.nav-cta .btn-ghost{display:none}}
+
+/* Hero */
+.hero{position:relative;padding:72px 0 40px;text-align:center;overflow:hidden}
+.streaks{position:absolute;inset:-20% -10% 0;z-index:-1;background:
+  linear-gradient(115deg,transparent 28%,var(--a-soft) 42%,transparent 52%),
+  linear-gradient(115deg,transparent 52%,oklab(.627 .148 -.22/.07) 62%,transparent 72%),
+  radial-gradient(60% 50% at 50% 0%,oklab(.585 .029 -.231/.18),transparent 70%),
+  var(--bg-deep)}
+.grid-lines{position:absolute;inset:0;z-index:-1;opacity:.12;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(60% 55% at 50% 40%,#000 30%,transparent 75%)}
+h1{font-size:clamp(42px,7.2vw,76px);line-height:1;font-weight:600;letter-spacing:-.02em;max-width:980px;margin:0 auto}
+.sub{color:var(--muted);font-size:clamp(17px,2vw,21px);font-weight:300;margin:22px auto 0;max-width:680px}
+.checks{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 28px;margin:26px 0 30px;color:var(--muted);font-size:15px}
+.checks span::before{content:"✓";color:var(--success);margin-right:8px;font-weight:700}
+.pill-cta{display:inline-flex;align-items:center;gap:12px;padding:6px 6px 6px 18px;border-radius:999px;background:rgb(255 255 255/.05);border:1px solid rgb(255 255 255/.12);font-size:14px;font-weight:500;transition:all .2s var(--ease)}
+.pill-cta:hover{background:rgb(255 255 255/.1);border-color:var(--a-line)}
+.pill-cta i{display:grid;place-items:center;width:28px;height:28px;border-radius:999px;background:rgb(255 255 255/.12);font-style:normal}
+
+/* Report preview */
+.preview{margin-top:48px;position:relative}
+.preview-card{max-width:720px;margin:0 auto;background:linear-gradient(180deg,oklch(.26 .06 262),oklch(.21 .05 262));border:1px solid var(--a-line);border-radius:16px;padding:28px 24px;box-shadow:0 30px 60px -20px rgb(0 0 0/.55),0 0 60px -20px var(--glow);text-align:left}
+.preview-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.preview-head .brand{font-size:18px;font-weight:600}
+.preview-head .date{font-size:13px;color:var(--muted)}
+.pq{margin:16px 0;padding:14px 16px;background:rgb(255 255 255/.03);border-radius:10px;border-left:3px solid var(--primary)}
+.pq .prompt{font-size:14px;color:var(--muted);margin-bottom:8px}
+.pq .verdict{font-size:14px}
+.pq .verdict .yes{color:var(--success);font-weight:600}
+.pq .verdict .no{color:#f87171;font-weight:600}
+
+/* Features */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+@media(max-width:820px){.features{grid-template-columns:1fr}}
+.features h3{font-size:19px;font-weight:600;margin-bottom:8px}
+.features p{color:var(--muted);font-size:15px}
+
+/* How it works */
+.steps{counter-reset:step;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px}
+@media(max-width:820px){.steps{grid-template-columns:1fr}}
+.step{position:relative;padding:28px 24px 24px;background:rgb(255 255 255/.03);border:1px solid rgb(255 255 255/.08);border-radius:14px}
+.step::before{counter-increment:step;content:counter(step);position:absolute;top:-14px;left:24px;width:28px;height:28px;background:linear-gradient(135deg,var(--a1),var(--a2));border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff}
+.step h4{font-size:17px;font-weight:600;margin-bottom:6px}
+.step p{color:var(--muted);font-size:14px}
+
+/* Pricing */
+.pricing-wrap{margin-top:40px;display:flex;justify-content:center}
+.pricing{max-width:420px;background:linear-gradient(180deg,oklch(.26 .06 262),oklch(.19 .04 262));border:1px solid var(--a1);border-radius:20px;padding:36px 32px;box-shadow:0 0 60px -20px var(--glow);text-align:left}
+.pricing .tag{display:inline-flex;padding:3px 10px;border-radius:999px;background:var(--a-soft);border:1px solid var(--a-line);color:var(--label);font-size:12px;font-weight:600;margin-bottom:16px}
+.pricing .amount{font-size:56px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.pricing .amount .cents{font-size:22px;color:var(--muted);font-weight:400;vertical-align:top;margin-left:4px}
+.pricing .once{color:var(--muted);font-size:14px;margin:4px 0 20px}
+.pricing ul{list-style:none;margin:0 0 24px;padding:0}
+.pricing li{padding:7px 0 7px 26px;position:relative;font-size:15px}
+.pricing li::before{content:"✓";position:absolute;left:0;color:var(--success);font-weight:700}
+.pricing .btn{width:100%;justify-content:center;font-size:16px;padding:14px}
+.pricing .fineprint{color:var(--muted);font-size:12px;margin-top:14px;text-align:center}
+
+/* FAQ */
+.faq{max-width:720px;margin:40px auto 0}
+.faq details{border-bottom:1px solid var(--border);padding:18px 0;cursor:pointer}
+.faq summary{list-style:none;font-weight:500;font-size:17px;display:flex;justify-content:space-between;align-items:center}
+.faq summary::after{content:"+";font-size:22px;color:var(--muted);transition:transform .2s var(--ease)}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq p{color:var(--muted);margin-top:12px;font-size:15px;line-height:1.6}
+
+/* Footer */
+footer{padding:40px 0 32px;background:var(--bg-deep);text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--fg)}
+footer .ft-nav{margin-bottom:14px}
+footer .ft-nav a{margin:0 12px}
+
+@keyframes shine{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+@keyframes pulse{from{box-shadow:0 0 50px -10px var(--glow)}to{box-shadow:0 0 90px -5px var(--glow2)}}
+@media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<div class="announce">
+  <b>NEW</b> Launching Oct 25 — first 20 lifetime seats at $19 <a href="#pricing">See the deal →</a>
+</div>
+
+<div class="nav-wrap" id="navWrap">
+  <nav>
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      AskVisible
+    </div>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-cta">
+      <a class="btn btn-primary" href="#pricing">Get the $19 deal</a>
+    </div>
+  </nav>
+</div>
+
+<section class="hero">
+  <div class="grid-lines"></div>
+  <div class="streaks"></div>
+  <div class="container">
+    <span class="eyebrow">For indie hackers &amp; solo founders</span>
+    <h1>See how Gemini describes <span class="grad">your brand</span> — every week.</h1>
+    <p class="sub">A tiny Python script and a GitHub Actions workflow. You add your Gemini key, it emails you a report every Monday with what Google&rsquo;s AI says about your category. $19 one-time, runs forever on your own account.</p>
+    <div class="checks">
+      <span>Self-hosted on your GitHub</span>
+      <span>Side-by-side with your competitors</span>
+      <span>No subscription, no SaaS lock-in</span>
+    </div>
+    <a class="btn btn-primary" href="#pricing" style="font-size:16px;padding:14px 26px">Grab lifetime for $19 →</a>
+
+    <div class="preview">
+      <div class="preview-card">
+        <div class="preview-head">
+          <div class="brand">AcmeInvoice · Weekly report</div>
+          <div class="date">Week of Oct 20 2026</div>
+        </div>
+        <div class="pq">
+          <div class="prompt">Prompt &middot; "Best invoicing app for freelancers in 2026"</div>
+          <div class="verdict"><span class="yes">Mentioned</span> at position <b>3</b>, alongside Bonsai, FreshBooks and Harvest. Snippet: &ldquo;…AcmeInvoice is a lightweight option popular with EU-based freelancers who need VAT support.&rdquo;</div>
+        </div>
+        <div class="pq">
+          <div class="prompt">Prompt &middot; "Cheapest invoice tool under €15/month"</div>
+          <div class="verdict"><span class="no">Not mentioned</span>. Gemini listed: Wave, Zoho Invoice, Hiveage. (Here&rsquo;s one page you could publish to change that.)</div>
+        </div>
+        <div class="pq">
+          <div class="prompt">Prompt &middot; "Invoicing app with great mobile UX"</div>
+          <div class="verdict"><span class="yes">Mentioned</span> at position <b>5</b>. Delta vs last week: +2 positions.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="container center">
+    <span class="eyebrow">How it works</span>
+    <h2 class="h2">Three files. Ten minutes. Yours forever.</h2>
+    <p class="lead">You get a tiny GitHub repo. Add your free Gemini key as a secret, edit one JSON file. Monday mornings, you get a report.</p>
+
+    <div class="steps">
+      <div class="step">
+        <h4>Clone the repo</h4>
+        <p>&ldquo;Use this template&rdquo; on your own GitHub. One Python file, no dependencies, no accounts to create besides a free Google AI Studio key.</p>
+      </div>
+      <div class="step">
+        <h4>Edit <code>config.json</code></h4>
+        <p>Your brand, your competitors, your 5 prompts. Examples included. Commit.</p>
+      </div>
+      <div class="step">
+        <h4>Report every Monday</h4>
+        <p>GitHub Actions runs at 08:00 UTC, generates an HTML report, mails it to you. Also saved as a workflow artifact for free week-over-week history.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="background:linear-gradient(180deg,transparent,oklch(.21 .05 262))">
+  <div class="container center">
+    <span class="eyebrow">What&rsquo;s in each report</span>
+    <h2 class="h2">The signal, without the dashboard theatre.</h2>
+
+    <div class="features" style="text-align:left">
+      <div class="card">
+        <h3>Mention check per prompt</h3>
+        <p>Does Gemini name you? If yes, at what position and in what context. If no, who it named instead.</p>
+      </div>
+      <div class="card">
+        <h3>Competitor overlap</h3>
+        <p>For each prompt, which of your 3 competitors Gemini mentioned alongside &mdash; or without &mdash; you.</p>
+      </div>
+      <div class="card">
+        <h3>Week-over-week delta</h3>
+        <p>&ldquo;Up two positions&rdquo;, &ldquo;dropped from mention to not&rdquo;. The one number that tells you if things moved.</p>
+      </div>
+      <div class="card">
+        <h3>Raw Gemini snippet</h3>
+        <p>The actual two or three sentences, so you can judge how it describes you &mdash; not just whether.</p>
+      </div>
+      <div class="card">
+        <h3>Fix hints (beta)</h3>
+        <p>When Gemini doesn&rsquo;t mention you, a one-line suggestion for where to publish a page that might change that.</p>
+      </div>
+      <div class="card">
+        <h3>Honest about what we don&rsquo;t do</h3>
+        <p>V1 tracks Gemini only. Not ChatGPT, Claude, or Perplexity &mdash; those cost per call. More engines when revenue allows it, and only then.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" style="padding:80px 0">
+  <div class="container center">
+    <span class="eyebrow">Pricing</span>
+    <h2 class="h2">One price. <span class="grad">Forever.</span></h2>
+    <p class="lead">No seats, no &ldquo;Enterprise, call us&rdquo;, no credit-card-to-start trials. Pay once, read your Monday email for life.</p>
+
+    <div class="pricing-wrap">
+      <div class="pricing">
+        <span class="tag">Launch deal · 20 seats</span>
+        <div class="amount">$19<span class="cents">lifetime</span></div>
+        <p class="once">One-time. Billed through Gumroad.</p>
+        <ul>
+          <li>Python script + GitHub Actions workflow</li>
+          <li>Up to 10 prompts, up to 10 competitors</li>
+          <li>Any Google Gemini flash model</li>
+          <li>Runs on your free GitHub Actions quota</li>
+          <li>Mail delivery via your own SMTP (optional)</li>
+          <li>MIT source — fork, tweak, keep forever</li>
+        </ul>
+        <a class="btn btn-primary" href="https://98dkcc488b.gumroad.com/l/askvisible" rel="noopener">Buy lifetime access →</a>
+        <p class="fineprint">Launch pricing valid until first 20 sales. Price rises to $29.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq" style="background:linear-gradient(180deg,oklch(.21 .05 262),var(--bg))">
+  <div class="container center">
+    <span class="eyebrow">Questions people actually ask</span>
+    <h2 class="h2">Fair enough.</h2>
+
+    <div class="faq" style="text-align:left">
+      <details>
+        <summary>Why only Gemini and not ChatGPT or Claude?</summary>
+        <p>Because API calls to OpenAI, Anthropic and Perplexity cost real money per report, and I&rsquo;m launching with zero budget. Gemini has a generous free tier, so I can keep the lifetime price at $19. Once there&rsquo;s revenue, I&rsquo;ll add engines &mdash; existing buyers get them included.</p>
+      </details>
+      <details>
+        <summary>Is Gemini really enough? What about ChatGPT?</summary>
+        <p>Honest answer: no, one engine is not everything. But Google Gemini also powers Google&rsquo;s AI Overviews, which replace organic clicks on billions of searches. Tracking Gemini is tracking the search engine most of your prospects still start their day on. ChatGPT visibility matters too &mdash; it&rsquo;s on the roadmap.</p>
+      </details>
+      <details>
+        <summary>How is this different from Profound or Otterly?</summary>
+        <p>Profound starts around $500 a month and shut off its starter plan in September. Otterly starts at $29 a month and charges extra for Gemini specifically. AskVisible is $19 one-time, Gemini-first. If your budget is "I just want to see if Google&rsquo;s AI knows I exist", this is for you.</p>
+      </details>
+      <details>
+        <summary>What if Gemini never mentions my brand?</summary>
+        <p>Then the report tells you so, every week, with the actual snippet of what it says instead. Each report also includes one &ldquo;fix hint&rdquo; &mdash; the kind of page or citation that might change that. No guarantees, but at least you&rsquo;ll know where you stand.</p>
+      </details>
+      <details>
+        <summary>When does the first report arrive?</summary>
+        <p>As soon as you&rsquo;ve set up the repo and triggered the workflow once (there&rsquo;s a &ldquo;Run workflow&rdquo; button in the Actions tab). After that, every Monday at 08:00 UTC.</p>
+      </details>
+      <details>
+        <summary>Why self-hosted and not a hosted dashboard?</summary>
+        <p>Three reasons: (1) your API key stays on your account — I never see your prompts or your usage. (2) It keeps the price at $19 forever instead of &ldquo;$19/mo until I run out of margin&rdquo;. (3) The repo is yours — if I vanish tomorrow, your reports keep landing on Monday.</p>
+      </details>
+      <details>
+        <summary>Do I need to know Python / GitHub?</summary>
+        <p>You need a GitHub account and you need to be comfortable clicking &ldquo;New Secret&rdquo; and editing a JSON file. If you&rsquo;ve ever deployed a static site, you&rsquo;ll be done in 10 minutes. If &ldquo;git&rdquo; is a foreign word, this isn&rsquo;t for you yet.</p>
+      </details>
+      <details>
+        <summary>Who built this?</summary>
+        <p>One person, in public, on a weekend. If you want the full build log, follow <a href="https://bsky.app/profile/kaiversum.bsky.social">@kaiversum on Bluesky</a>.</p>
+      </details>
+      <details>
+        <summary>Refunds?</summary>
+        <p>If the first report lands in your inbox and you hate it, email back and I&rsquo;ll refund you. No forms, no process.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="ft-nav">
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="mailto:askvisible@kaiversum.dev">Email</a>
+    </div>
+    <div>© 2026 AskVisible. Built in public. No tracking, no newsletters you didn&rsquo;t ask for.</div>
+  </div>
+</footer>
+
+<script>
+const nw = document.getElementById('navWrap');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 10) nw.classList.add('scrolled'); else nw.classList.remove('scrolled');
+}, {passive:true});
+</script>
+</body>
+</html>
